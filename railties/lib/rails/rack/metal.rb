@@ -13,7 +13,7 @@ module Rails
       def self.metals
         matcher = /#{Regexp.escape('/app/metal/')}(.*)\.rb\Z/
         metal_glob = metal_paths.map{ |base| "#{base}/**/*.rb" }
-        all_metals = {}
+        all_metals = ActiveSupport::OrderedHash.new
 
         metal_glob.each do |glob|
           Dir[glob].sort.map do |file|
