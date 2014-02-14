@@ -58,4 +58,41 @@ class DummyMutex
   end
 end
 
+class ActionController::IntegrationTest < ActiveSupport::TestCase
+  def with_autoload_path(path)
+    path = File.join(File.dirname(__FILE__), "fixtures", path)  
+    if ActiveSupport::Dependencies.autoload_paths.include?(path)
+      yield
+    else
+      begin
+        ActiveSupport::Dependencies.autoload_paths << path
+        yield
+      ensure
+        ActiveSupport::Dependencies.autoload_paths.reject! {|p| p == path}
+        ActiveSupport::Dependencies.clear
+      end              
+    end
+  end
+end
+
+module RailsXssEmulation
+  module ContentTag
+    def self.included(by)
+      by.alias_method_chain :content_tag_string, :escaping
+    end
+
+    private
+
+    def content_tag_string_with_escaping(name, content, options, escape = true)
+      content_tag_string_without_escaping(name, escape ? ERB::Util.h(content) : content, options, escape)
+    end
+
+  end
+
+  class InstanceTagWithRailsXss < ActionView::Helpers::InstanceTag
+    include RailsXssEmulation::ContentTag
+  end
+
+end
+
 ActionController::Reloader.default_lock = DummyMutex.new
